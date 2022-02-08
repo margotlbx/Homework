@@ -1,0 +1,99 @@
+---
+title: "Group Assignment 9"
+author: "Margot Lai(499100)"
+date: "11/11/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+9.7 Exercises
+Problem #5. We have seen that we can fit an SVM with a non-linear kernel in order to perform classification using a non-linear decision boundary. We will now see that we can also obtain a non-linear decision boundary by performing logistic regression using non-linear transformations of the features.
+
+(a) Generate a data set with n = 500 and p = 2, such that the observations belong to two classes with a quadratic decision boundary between them. For instance, you can do this as follows:
+
+> x1=runif (500) -0.5
+
+> x2=runif (500) -0.5
+
+> y=1*(x1^2-x2^2 > 0)
+
+```{r}
+set.seed(1)
+x1=runif(500) -0.5
+x2=runif(500) -0.5 
+y=1*(x1^2-x2^2 > 0)
+```
+
+(b) Plot the observations, colored according to their class labels. Your plot should display 𝑋1 on the x-axis, and 𝑋2 on the y-axis.
+
+```{r}
+colors=ifelse(y==0, 'red', 'blue')
+plot(x1, x2, col=colors)
+```
+(c) Fit a logistic regression model to the data, using 𝑋1 and 𝑋2 as predictors.
+
+```{r}
+
+data1 = data.frame(x1 = x1, x2 = x2, y = as.factor(y))
+lm.fit = glm(y ~ x1 + x2, family = binomial)
+summary(lm.fit)
+```
+(d) Apply this model to the training data in order to obtain a predicted class label for each training observation. Plot the observations, colored according to the predicted class labels. The decision boundary should be linear.
+
+```{r}
+lm.prob = predict(lm.fit, data1, type = "response")
+lm.pred = ifelse(lm.prob > 0.5, 1, 0)
+colors = ifelse(lm.pred==0, 'red', 'blue')
+plot(x1, x2, col = colors)
+```
+(e) Now fit a logistic regression model to the data using non-linear functions of 𝑋1 and 𝑋2 as predictors (e.g. 𝑋21, 𝑋1× 𝑋2, log(𝑋2), and so forth).
+
+```{r}
+lm.fit2 = glm(y~poly(x1,2)+poly(x2,2), data = data1, family = "binomial")
+```
+
+(f) Apply this model to the training data in order to obtain a predicted class label for each training observation. Plot the observations, colored according to the predicted class labels. The decision boundary should be obviously non-linear. If it is not, then repeat (a)-(e) until you come up with an example in which the predicted class labels are obviously non-linear.
+```{r}
+lm.prob2 = predict(lm.fit2, data1, type = "response")
+lm.pred2 = ifelse(lm.prob2 > 0.5, 1, 0)
+colors = ifelse(lm.pred2==0, 'red', 'blue')
+plot(x1, x2, col = colors)
+```
+(g) Fit a support vector classifier to the data with 𝑋1 and 𝑋2 as predictors. Obtain a class prediction for each training observation. Plot the observations, colored according to the predicted class labels.
+
+
+```{r}
+library(e1071)
+data = data.frame(x=cbind(x1,x2),y=as.factor(y))
+set.seed(1)
+tune.out = tune(svm,y~.,data=data,kernal="linear",ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100)), scale = FALSE)
+summary(tune.out)
+bestmod = tune.out$best.model
+summary(bestmod)
+plot(bestmod,data)
+```
+(h) Fit a SVM using a non-linear kernel to the data. Obtain a class prediction for each training observation. Plot the observations, colored according to the predicted class labels.
+
+```{r}
+lm.prob2 = predict(lm.fit2, data1, type = "response")
+lm.pred2 = ifelse(lm.prob2 > 0.5, 1, 0)
+colors = ifelse(lm.pred2==0, 'red', 'blue')
+plot(x1, x2, col = colors)
+```
+
+```{r}
+tune.out = tune(svm,y~.,data=data,kernal="radial",ranges = list(cost = c(0.001, 0.01, 0.1, 1, 5, 10, 100)), scale = FALSE)
+ypred1 = predict(tune.out$best.model, data)
+summary(tune.out)
+bestmod = tune.out$best.model
+summary(bestmod)
+plot(bestmod,data)
+```
+
+(i) Comment on your results.
+

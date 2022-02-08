@@ -1,0 +1,65 @@
+---
+title: "Individual Assignment 7"
+author: "Margot Lai(499100)"
+date: "10/29/2021"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Problem #8: In the lab, a classification tree was applied to the Carseats data set after converting Sales into a qualitative response variable. Now we will seek to predict Sales using regression trees and related approaches, treating the response as a quantitative variable.
+
+(a) Split the data set into a training set and a test set.
+
+```{r}
+library(tree)
+library(ISLR)
+attach(Carseats)
+set.seed(100)
+train = sample(1:nrow(Carseats), nrow(Carseats)/2)
+car.train = Carseats[train,]
+car.test = Carseats[-train,]
+```
+
+(b) Fit a regression tree to the training set. Plot the tree, and interpret the results. What test MSE do you obtain?
+
+```{r}
+car.tree = tree(Sales~.,data = car.train)
+plot(car.tree)
+text(car.tree, pretty = 0)
+summary(car.tree)
+car.tree
+##Interpretation: Price, CompPrice and Age are the terminal nodes, shelveloc is the most important indicator of sales, and price will be classified based on age predictor.
+
+yhat = predict(car.tree,newdata = car.test)
+mean((yhat - car.test$Sales)^2)
+#Test MSE is 5.395751
+```
+
+(c) Use cross-validation in order to determine the optimal level of tree complexity. Does pruning the tree improve the test MSE?
+
+```{r}
+set.seed(100)
+car.cv = cv.tree(car.tree)
+plot(car.cv$size, car.cv$dev, type = "b")
+plot(car.cv$k, car.cv$dev, type = "b")
+#Size 8 nodes is the best
+```
+```{r}
+prune.car = prune.tree(car.tree, best = 8)
+plot(prune.car)
+text(prune.car,pretty=0)
+
+predict.prune = predict(prune.car, newdata = car.test)
+mean((predict.prune - car.test$Sales)^2)
+#The MSE slightly decrease from 5.395751 to 5.32676 after prued, pruning the tree improved the test MSE.
+```
+
+ 

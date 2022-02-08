@@ -1,0 +1,117 @@
+---
+title: "Individual Assignment 10"
+author: "Margot Lai(499100)"
+date: "11/21/2021"
+output: word_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Direct Mailing to Airline Customers. East-West Airlines has entered into a partnership with the wireless phone company Telcon to sell the latter’s service via direct mail. The file EastWestAirlinesNN.csv  Download EastWestAirlinesNN.csv contains a subset of a data sample of who has already received a test offer. About 13% accepted.
+
+You are asked to develop a model to classify East-West customers as to whether they purchase a wireless phone service contract (outcome variable Phone_Sale). This model will be used to classify additional customers.
+
+1. Run a neural net model on these data, using a single hidden layer with 5 nodes. Remember to first convert categorical variables into dummies and scale numerical predictor variables to a 0-1 (use function preprocess() with method=“range” - see Chapter 7). Generate a deciles-wise lift chart for the training and validation sets. Interpret the meaning (in business terms) of the leftmost bar of the validation decile- wise lift chart.
+```{r}
+library(fastDummies)
+library(neuralnet)
+library(nnet)
+library(caret)
+
+df= read.csv("/Users/margotlbx/Downloads/EastWestAirlinesNN.csv")
+df = na.omit(df)
+head(df)
+
+dim(df)
+
+set.seed(1)
+d_train = sample(row.names(df), 0.5*dim(df[1]))
+d_test = setdiff(row.names(df), d_train)
+
+df = dummy_cols(df, select_columns = "Online_12")
+
+df$Online_12 =NULL
+df$ID = NULL
+df_train = df[d_train, ]
+df_test = df[d_test, ]
+df_train_norm = df_train
+df_test_norm = df_test
+df_norm = df
+
+norm_values = preProcess(df_train[,c(2,3,7,8,9,10)], method="range")
+df_train_norm[,c(2,3,7,8,9,10)] = predict(norm_values,df_train[,c(2,3,7 ,8,9,10)])
+df_test_norm[,c(2,3,7,8,9,10)] = predict(norm_values,df_test[,c(2,3,7,8 ,9,10)])
+df_norm[,c(2,3,7,8,9,10)] = predict(norm_values, df[,c(2,3,7,8,9,10)])
+nn = neuralnet(Phone_sale ~., data = df_train_norm, linear.output = F, hidden = 5)
+plot(nn, rep="best")
+```
+
+
+Comment on the difference between the training and validation lift charts.
+
+The train error rate is (172+222)/(1980+222+172+118)=0.158105939
+The test error rate is (242+254)/(1936+253+242+62)=0.19895707982
+
+```{r}
+nn$weights
+```
+```{r}
+train_p_2 = predict(nn_2,newdata = df_train_norm)
+nn_train_predict_2 = ifelse(train_p_2>0.2,1,0) 
+test_p_2 = predict(nn_2,newdata = df_test_norm) 
+nn_test_predict_2 = ifelse(test_p_2>0.2,1,0)
+```
+
+```{r}
+library(gains)
+gains = gains(df_train_norm$Phone_sale, train_p)
+## Warning in gains(df_train_norm$Phone_sale, train_p): Warning: Fewer distinct
+## predicted values than groups requested
+barplot(gains$mean.resp/mean(df_train_norm$Phone_sale), names.arg = gai ns$depth ,xlab = "Percentile", ylab = "Mean Response", main = "Decile-w ise lift chart" )
+```
+
+```{r}
+library(gains)
+gains = gains(df_test_norm$Phone_sale, test_p)
+## Warning in gains(df_test_norm$Phone_sale, test_p): Warning: Fewer di stinct
+## predicted values than groups requested
+barplot(gains$mean.resp/mean(df_test_norm$Phone_sale), names.arg = gain s$depth, xlab = "Percentile", ylab = "Mean Response", main = "Decile-wi
+se lift chart")
+```
+
+The test decile chart indicates that we can even use the model to select the top 10% records with the highest propensities and still perform around 1.5 times as well as random.
+2.Comment on the difference between the training and validation lift charts.
+The training decile chart indicates that we can even use the model to select the top 10% records with the highest propensities and still perform around 2.5 times as well as random, whereas the test decile chart only indicates 1.5 times as much. Therefore, the discrepancy between training decile chart and test decile chart suggests there could be a overfitting issue with this model.
+3.Run a second neural net model on the data, this time setting the number of hidden nodes to 1. Comment now on the difference between this model and the model you ran earlier, and how overfitting might have affected results.
+```{r}
+ nn_2 <- neuralnet(Phone_sale ~., data = df_train_norm, linear.output = F, hidden = 1)
+ plot(nn_2, rep="best")
+```
+
+```{r}
+nn_2$weights
+
+train_p_2 = predict(nn_2,newdata = df_train_norm)
+nn_train_predict_2 = ifelse(train_p_2>0.2,1,0) 
+test_p_2 = predict(nn_2,newdata = df_test_norm)
+nn_test_predict_2 = ifelse(test_p_2>0.2,1,0)
+table(predict = nn_train_predict_2, truth = df_train_norm$Phone_sale)
+table(predict = nn_test_predict_2, truth = df_test_norm$Phone_sale)
+#The train error rate is (246+250)/(1906+250+246+90)=0.19903691813 The test error rate is (283+250)/(1895+250+283+65)=0.21379863618
+library(gains)
+g2 = gains(df_train_norm$Phone_sale, train_p_2)
+barplot(g2$mean.resp/mean(df_train_norm$Phone_sale), names.arg = g2$depth ,xlab = "Percentile", ylab = "Mean Response", main = "Decile-wise lift chart" )
+```
+```{r}
+library(gains)
+g3 = gains(df_test_norm$Phone_sale, test_p_2)
+barplot(g3$mean.resp/mean(df_test_norm$Phone_sale), names.arg = g3$depth, xlab = "Percentile", ylab = "Mean Response", main = "Decile-wise lif t chart")
+```
+
+4.What sort of information, if any, is provided about the effects of the various variables?
+
+We need to look at the weights in the best model for each of the variables to reveal the effects. If the weight is near zero, changing this input variable will not change the output. If the weight is negative, it means that increasing this input variable will decrease the output. If the weight is positive, it means that increasing this input variable will increase the output. In short, weights decide how much influence the input variable will have on the output.

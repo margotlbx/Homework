@@ -1,0 +1,72 @@
+---
+title: "Group Assignment 5"
+author: "Margot Lai, Wenxun Hu, Ziyi Hui, Ye Kou, Xiaochen Kuang, Jarven Huang"
+output:
+  word_document: default
+  pdf_document: default
+  html_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+Exercise 5.4: Problem 2 (part h)
+Problem 2: We will now derive the probability that a given observation is part of a bootstrap sample. Suppose that we obtain a bootstrap sample from a set of 𝑛 observations.
+
+(g) Create a plot that displays, for each integer value of 𝑛 from 1 to 100, 000, the probability that the 𝑗th observation is in the bootstrap sample. Comment on what you observe.
+
+```{r}
+x=seq(1,100000)
+y=1-((1-(1/x))^x)
+plot(x,y,xlab="n")
+#as n gets larger, the probability converges to approximately 0.62
+```
+(h) We will now investigate numerically the probability that a bootstrap sample of size 𝑛=100 contains the 𝑗th observation. Here 𝑗=4. We repeatedly create bootstrap samples, and each time we record whether or not the fourth observation is contained in the bootstrap sample.
+```{r}
+store=rep(NA, 10000)
+
+for(i in 1:10000) { store[i]=sum(sample (1:100, rep=TRUE)==4) >0
+
+}
+
+mean(store)
+#This result is really close to what we get at question g
+```
+
+Comment on the results obtained.
+
+Exercise 5.4: Problem 6
+Problem 6: We continue to consider the use of a logistic regression model to predict the probability of default using income and balance on the Default data set. In particular, we will now compute estimates for the standard errors of the income and balance logistic regression coefficients in two different ways:
+
+using the bootstrap, and 
+using the standard formula for computing the standard errors in the 𝑔𝑙𝑚()function. Do not forget to set a random seed before beginning your analysis.
+(a) Using the 𝑠𝑢𝑚𝑚𝑎𝑟𝑦() and 𝑔𝑙𝑚() functions, determine the estimated standard errors for the coefficients associated with income and balance in a multiple logistic regression model that uses both predictors.
+```{r}
+library(ISLR)
+glm.fit=glm(default~income+balance,data=Default,family=binomial)
+summary(glm.fit)
+```
+
+(b) Write a function, 𝑏𝑜𝑜𝑡.𝑓𝑛(), that takes as input the Default data set as well as an index of the observations, and that outputs the coefficient estimates for income and balance in the multiple logistic regression model.
+```{r}
+library(boot)
+set.seed(1)
+boot.fn = function(data,index){
+  return(coef(glm(default~income+balance,data=data,family=binomial,subset = index)))
+}
+
+```
+(c) Use the 𝑏𝑜𝑜𝑡() function together with your 𝑏𝑜𝑜𝑡.𝑓𝑛() function to estimate the standard errors of the logistic regression coefficients for income and balance.
+```{r}
+library(boot)
+boot(Default,boot.fn,R=1000)
+```
+(d) Comment on the estimated standard errors obtained using the 𝑔𝑙𝑚() function and using your bootstrap function.
+The standard error we attained from the bootstrap is close to the standard errors of logistic regression in (a).

@@ -1,0 +1,129 @@
+---
+title: "Group Assignment 7"
+author: "Ziyi Hui, Margot Lai,Wenxun Hu, Ye Kou, Xiaochen Kuang, Jarven Huang"
+output:
+  word_document: default
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+Exercise 8.4
+Problem #9: This problem involves the OJ data set which is part of the ISLR package.
+
+(a) Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations.
+
+```{r}
+library(ISLR)
+attach(OJ)
+set.seed(1)
+train=sample(1:nrow(OJ),800)
+OJ.test=OJ[-train,]
+```
+(b) Fit a tree to the training data, with Purchase as the response and the other variables as predictors. Use the summary() function to produce summary statistics about the tree, and describe the results obtained. What is the training error rate? How many terminal nodes does the tree have?
+
+```{r}
+library(tree)
+tree.oj=tree(Purchase~.,data=OJ,subset=train)
+summary(tree.oj)
+#training error rate is 0.1588, # of terminal nodes is 9
+```
+
+(c) Type in the name of the tree object in order to get a detailed text output. Pick one of the terminal nodes, and interpret the information displayed.
+
+```{r}
+names(tree.oj)
+tree.oj
+# 24) PctDiscMM < 0.196196 55   73.14 CH ( 0.61818 0.38182 ) *
+#When PctDiscMM less than 0.196196, there are 55 observations, deviance is 73.14,  the level classify it result as CH. 0.61818 is the probability of CH and 0.38182 is the probability of MM. (* means this is a terminal node.)
+```
+(d) Create a plot of the tree, and interpret the results.
+
+```{r}
+plot(tree.oj)
+text(tree.oj, pretty=0)
+#Interpretation: the most important indicator of “purchase” appears to be “loyalch”. its value of less than 0.5036 is pretty much going to be classified as “MM”. value >= 0.764572 as “CH”. and values below 0.764572 will be classified based on “pricediff” predictor.
+```
+(e) Predict the response on the test data, and produce a confusion matrix comparing the test labels to the predicted test labels. What is the test error rate?
+
+```{r}
+
+tree.pred=predict(tree.oj,OJ.test,type="class")
+
+table(tree.pred,OJ$Purchase[-train])
+
+mean(tree.pred==OJ$Purchase[-train])
+
+#test error rate is 0.8296296
+```
+(f) Apply the cv.tree() function to the training set in order to determine the optimal tree size.
+
+```{r}
+set.seed(3)
+
+cv.oj=cv.tree(tree.oj,FUN=prune.misclass)
+
+cv.oj
+```
+(g) Produce a plot with tree size on the x-axis and cross-validated classification error rate on the y-axis.
+
+```{r}
+par(mfrow=c(1,2))
+
+plot(cv.oj$size,cv.oj$dev,type="b")
+
+plot(cv.oj$k,cv.oj$dev,type="b")
+
+par(mfrow=c(1,1))
+```
+(h) Which tree size corresponds to the lowest cross-validated classification error rate?
+
+7 is the size with the lowest cross-validated classification error rate.
+
+(i) Produce a pruned tree corresponding to the optimal tree size obtained using cross-validation. If cross-validation does not lead to selection of a pruned tree, then create a pruned tree with five terminal nodes.
+
+```{r}
+#optimal tree size 7
+
+prune.oj=prune.misclass(tree.oj,best=7)
+
+plot(prune.oj)
+
+text(prune.oj,pretty=0)
+
+tree.pred=predict(prune.oj,OJ.test,type="class")
+
+table(tree.pred,OJ$Purchase[-train])
+
+mean(tree.pred==OJ$Purchase[-train])
+```
+
+```{r}
+#tree size 5
+
+prune.oj=prune.misclass(tree.oj,best=5)
+
+plot(prune.oj)
+
+text(prune.oj,pretty=0)
+
+tree.pred=predict(prune.oj,OJ.test,type="class")
+
+table(tree.pred,OJ$Purchase[-train])
+
+mean(tree.pred==OJ$Purchase[-train])
+
+summary(prune.oj)
+```
+(j) Compare the training error rates between the pruned and unpruned trees. Which is higher?
+
+For training error rate, pruned trees error rate is 0.1625, unpruned trees error rate is 0.1588, pruned trees is higher.
+
+(k) Compare the test error rates between the pruned and unpruned trees. Which is higher?
+
+For test accuracy rates, unpruned trees is 0.8296296, pruned trees is 0.837037, pruned tree has higher test accuracy rate, which means pruned tress has lower test error rate.
